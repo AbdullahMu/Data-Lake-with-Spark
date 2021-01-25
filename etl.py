@@ -18,9 +18,19 @@ os.environ['AWS_SECRET_ACCESS_KEY']=config['AWS_KEY']['AWS_SECRET_ACCESS_KEY']
 
 
 def create_spark_session():
-    """
-    This procedure creates a Spark session to process data.
-    """
+    '''
+    A procedure that returns the Spark session specified in the configrations or creates one if not existent.
+    
+    Parameters
+    ----------
+    None
+    
+    Returns
+    -------
+    spark : sparkContext
+        The Spark context associated with the Spark session specified in the configrations
+    '''
+    
     spark = SparkSession \
         .builder \
         .config("spark.jars.packages", "org.apache.hadoop:hadoop-aws:2.7.0") \
@@ -29,22 +39,44 @@ def create_spark_session():
 
 
 def process_song_data(spark, input_data_songs, output_data):
-    """
-    This procedure loads data from S3, processes it using Spark and then writes data back to S3.
-      
-    INPUTS:
-    * spark - the Spark session
-    * input_data_songs - location of the input data of JSON song files
-    * output_data - location of where the output data will be stored
+    '''
+    A procedure that ingests song data from S3 with an ETL pipeline: 
+        A) Extracts data from "song_data" dataset in S3, 
+        B) Transform (process) them using Spark, and
+        C) Loads the data back into S3 as a set of dimensional tables.
     
-     OUTPUTS:
-    * Songs table - output folder with parquet files of Song data
-    * Artists table -  output folder with parquet files of Artist data     
-    """
+    Parameters
+    ----------
+    spark : sparkContext
+        the Spark session to process the data
+    
+    input_data : str
+        path of the song dataset S3 bucket
+    
+    output_data : str
+        path of the location in which the parquet files will be stored
+    
+    song_data_schema : StructType
+        defined schema for Song data
+    
+    df : DataFrame
+        DataFrame used to read JSON song files into tabular form
+    
+    songs_table : parquet
+        output parquet files of Song data
+    
+    artists_table : parquet
+        output parquet files of Artist data
+    
+    Returns
+    -------
+    None
+    '''
+    
     # get filepath to song data file
     song_data = input_data_songs        
     
-    # read song data file
+    # define schema for song data file
     song_data_schema = R([
         Fld("artist_id", Str()),
         Fld("artist_latitude", Str()),
@@ -57,6 +89,7 @@ def process_song_data(spark, input_data_songs, output_data):
         Fld("year", Int())
     ])
     
+    # read song data file
     df = spark.read.json(song_data,schema=song_data_schema)
     
     # extract columns to create songs table
@@ -102,24 +135,50 @@ def process_song_data(spark, input_data_songs, output_data):
 
 
 def process_log_data(spark, input_data_songs, input_data_logs, output_data):
-   """
-    This procedure loads data from S3, processes it using Spark and then writes data back to S3.
-      
-    INPUTS:
-    * spark - the Spark session
-    * input_data_songs - location of the input data of JSON song files
-    * input_data_logs - location of the input data of JSON log files
-    * output_data - location of where the output data will be stored
+   '''
+    A procedure that ingests log data from S3 with an ETL pipeline: 
+    A) Extracts data from log files in S3, 
+    B) Transform (process) them using Spark, and
+    C) Loads the data back into S3 as a set of dimensional tables.
     
-     OUTPUTS:
-    * Users table - output folder with parquet files of Users data
-    * Time table -  output folder with parquet files of Time data  
-    * Songplays table -  output folder with parquet files of Songplays data     
-    """
+    Parameters
+    ----------
+    spark : sparkContext
+        the Spark session to process the data
+    
+    input_data : str
+        path of the log files S3 bucket
+    
+    output_data : str
+        path of the location in which the parquet files will be stored
+    
+    song_data :
+        output folder with parquet files of Song data
+        
+    log_data_schema : StructType
+        defined schema for log data
+    
+    df : DataFrame
+        DataFrame used to read JSON log files into tabular form
+    
+    users_table : parquet
+        output with parquet files of Users data
+    
+    time_table : parquet
+        output with parquet files of Time data
+        
+    songplays_table : parquet
+        output with parquet files of Songplays data
+    
+    Returns
+    -------
+    None
+    '''
+
     # get filepath to log data file
     log_data = input_data_logs
-     
-    # read log data file
+    
+    # define schema for log data file
     log_data_schema = R([
         Fld("artist", Str()),
         Fld("auth", Str()),
@@ -141,6 +200,7 @@ def process_log_data(spark, input_data_songs, input_data_logs, output_data):
         Fld("userId", Int())
     ])
     
+    # read log data file
     df = spark.read.json(log_data,schema=log_data_schema)
     
     # filter by actions for song plays
